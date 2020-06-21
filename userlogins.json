@@ -1,0 +1,26 @@
+[
+  { 
+    "username":"admin@test.data",
+    "password":"test",
+    "firstname":"Administrator",
+    "lastname":"Account",
+    "role":"Admin",
+    "permissions": [""]
+  },
+  {
+    "username": "user@test.data",
+    "password": "test",
+    "firstname": "User",
+    "lastname": "Account",
+    "role": "User",
+    "permissions": [ "Oaklands" ]
+  },
+  {
+    "username": "datamanager@test.data",
+    "password": "test",
+    "firstname": "Data Manager",
+    "lastname": "Account",
+    "role": "DataManager",
+    "permissions": [ "" ]
+  }
+]

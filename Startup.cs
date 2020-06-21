@@ -1,10 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using DataRoom.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -28,6 +25,11 @@ namespace DataRoom
             {
                 options.IdleTimeout = TimeSpan.FromMinutes(2);
             });
+
+            services.AddSingleton<UserService>();
+            services.AddSingleton<AuthService>();
+            services.AddSingleton<FileDataService>();
+            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using DataRoom.Models;
+using DataRoom.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,29 +8,40 @@ namespace DataRoom.Controllers
 {
     public class AuthController : Controller
     {
-        private Dictionary<string, UserModel> userLogins = new Dictionary<string, UserModel>() { { "lewis.barnes", new UserModel { EmailAddress = "lewis.barnes", Password = "test" }}};
+
+        private readonly UserService userService;
+        private readonly AuthService authService;
+        public AuthController(UserService uService, AuthService aService)
+        {
+            userService = uService;
+            authService = aService;
+        }
+
+        [Route("/Login")]
         public IActionResult Login()
         {
+            HttpContext.Session.Clear();
+            ViewData["QuotingReference"] = authService.GetQuotingReference(HttpContext.Connection.RemoteIpAddress.ToString());
             return View();
         }
 
+        [Route("/Logout")]
         public IActionResult Logout()
         {
-            HttpContext.Session.Clear();
-            return View("Login");
+            return Redirect("Login");
         }
 
-        public IActionResult Post(UserModel userModel)
+        public IActionResult LoginPost(UserModel userModel)
         {
-            if(!string.IsNullOrEmpty(userModel.EmailAddress))
+            if(authService.AuthenticateUser(userModel))
             {
-                if (userLogins.ContainsKey(userModel.EmailAddress) && userLogins[userModel.EmailAddress].Password == userModel.Password)
-                {
-                    HttpContext.Session.SetString("UserName", userLogins[userModel.EmailAddress].EmailAddress);
-                    return Redirect("/Home/Index");
-                }
+                var user = userService.GetUserModel(userModel.Username);
+
+                HttpContext.Session.SetString("Username", user.Username);
+                HttpContext.Session.SetString("UserRole", user.Role.ToString());
             }
-            return Redirect("/Home/Index");
+            return RedirectToAction("Index", "Home");
         }
+
     }
 }

@@ -1,63 +1,69 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using DataRoom.Helpers;
 using DataRoom.Models;
-using System.IO;
-using Microsoft.AspNetCore.Session;
-using Microsoft.Net.Http.Headers;
-using System.Net.Mime;
-using Microsoft.AspNetCore.StaticFiles;
+using DataRoom.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Net.Http.Headers;
 
 namespace DataRoom.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-
-        public HomeController(ILogger<HomeController> logger)
+        private readonly UserService userService;
+        private readonly FileDataService fileDataService;
+        public HomeController(UserService uService, FileDataService fDService)
         {
-            _logger = logger;
+            userService = uService;
+            fileDataService = fDService;
         }
+        
         [Route("/")]
-        [Route("Home/Index")]
-        [Route("Home/Index/{path}/")]
-        [Route("Home/Index/{path}/{type}")]
-        public IActionResult Index(string path = "DataSource", string type = "Directory")
+        [Route("/{itemPath}")]
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Index(string itemPath = null)
         {
-            if(HttpContext.Session.GetString("UserName") != null)
-            {
-                if (type == "Directory")
-                {
 
-                    ViewData["Directories"] = FileSystemModel.GetListDataForPath(path);
-                    ViewData["CurrentPath"] = path.Replace("DataSource", "");
-                    if (string.IsNullOrEmpty(ViewData["CurrentPath"] as string))
-                    {
-                        ViewData["CurrentPath"] = "Developments";
-                    }
-                }
-                else if (type == "File")
+            if (!HttpContext.Session.HasUsername())
+            {
+                return Redirect("/Login");
+            }
+
+            var user = userService.GetUserModel(HttpContext.Session.GetString("Username"));
+
+            // Check user permissions and path validity
+            if (!string.IsNullOrEmpty(itemPath) && !fileDataService.IsPathTopLevel(itemPath))
+            {
+                if (!fileDataService.PathExists(itemPath)) { return NotFound(); }
+                if (!user.HasRole(UserRole.DataManager))
                 {
-                    var cd = new ContentDispositionHeaderValue("attachment")
-                    {
-                        FileName = path.Split("\\")[^1]
-                    };
-                    Response.Headers.Add(HeaderNames.ContentDisposition, cd.ToString());
-                    var fileData = System.IO.File.ReadAllBytes(path);
-                    new FileExtensionContentTypeProvider().TryGetContentType(path, out string contentType);
-                    return File(fileData, contentType);
+                    if (!user.HasPermission(fileDataService.GetSubjectFolderName(itemPath))) { return Unauthorized(); }
                 }
-                return View();
+            }
+
+            if(!string.IsNullOrEmpty(itemPath))
+            {
+                if (fileDataService.IsPathFolder(itemPath)) { ViewData["CurrentPath"] = itemPath; }
+                else if (fileDataService.IsPathFile(itemPath)) { return GetFileDownload(itemPath); }
             } else
             {
-                return Redirect("/Auth/Login");
+                ViewData["CurrentPath"] = fileDataService.TopLevelDataFolder;
             }
-            
+
+            var fileFolderModel = fileDataService.GetDataForPath(itemPath);
+            if (fileFolderModel.FileObjects.Any())
+            {
+                // Only check permissions if the path is top level or user role is lower than DataManager
+                if (fileDataService.IsPathTopLevel(fileFolderModel.FileObjects.First().Parent) && !user.HasRole(UserRole.DataManager))
+                {
+                    fileFolderModel.FileObjects = fileFolderModel.FileObjects
+                        .Where(x => user.HasPermission(fileDataService.GetSubjectFolderName(x.ItemPath)))
+                        .ToList();
+                }
+            }
+            return View(fileFolderModel);
         }
 
         public IActionResult Privacy()
@@ -69,6 +75,19 @@ namespace DataRoom.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        [NonAction]
+        private IActionResult GetFileDownload(string path)
+        {
+            var cd = new ContentDispositionHeaderValue("attachment")
+            {
+                FileName = path.Split("\\")[^1]
+            };
+            Response.Headers.Add(HeaderNames.ContentDisposition, cd.ToString());
+            var fileData = fileDataService.GetDataForFile(path);
+            new FileExtensionContentTypeProvider().TryGetContentType(fileDataService.GetFullPath(path), out string contentType);
+            return File(fileData, contentType);
         }
     }
 }

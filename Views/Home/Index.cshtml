@@ -1,0 +1,29 @@
+﻿@using Microsoft.AspNetCore.Http
+@{
+    ViewData["Title"] = "Home Page";
+    var directories = ViewData["Directories"] as List<FileSystemModel>;
+}
+<div class="row">
+    <div class="col-md-4"></div>
+    <div class="col-md-4 d-flex flex-column justify-content-center text-center">@ViewData["CurrentPath"]</div>
+    <div class="col-md-4"></div>
+</div>
+<div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-8 d-flex flex-column justify-content-center text-center">
+        @if (directories.Any())
+        {
+            foreach (FileSystemModel s in directories)
+            {
+                @Html.ActionLink(s.DisplayName, "Index", "Home", new { path = s.ItemPath, type = s.Type });
+            }
+        }
+        else
+        {
+            <p>No data available to you.</p>
+        }
+    </div>
+    <div class="col-md-2"></div>
+</div>
+
+

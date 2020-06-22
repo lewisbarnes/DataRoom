@@ -22,8 +22,94 @@ namespace DataRoom.Controllers
 
             if(user.HasRole(UserRole.DataManager))
             {
-                ViewData["CurrentPath"] = path;
-                return View();
+                if(fileDataService.PathExists(path))
+                {
+                    ViewData["CurrentPath"] = path;
+                    return View();
+                } else
+                {
+                    return NotFound();
+                }
+
+            }
+
+            return Unauthorized();
+        }
+
+        public IActionResult Rename(string path)
+        {
+
+            UserModel user = userService.GetUserModel(HttpContext.Session.GetString("Username"));
+
+            if (user.HasRole(UserRole.DataManager))
+            {
+                if (fileDataService.PathExists(path))
+                {
+                    if (fileDataService.IsPathFile(path))
+                    {
+                        ViewData["ObjectType"] = "Document";
+                    }
+                    else if (fileDataService.IsPathFolder(path))
+                    {
+                        ViewData["ObjectType"] = "Folder";
+                    }
+                    ViewData["CurrentPath"] = path;
+                    return View();
+                }
+                else
+                {
+                    return NotFound();
+                }
+            }
+
+            return Unauthorized();
+        }
+
+        public IActionResult Delete(string path)
+        {
+
+            UserModel user = userService.GetUserModel(HttpContext.Session.GetString("Username"));
+
+            if (user.HasRole(UserRole.DataManager))
+            {
+                if (fileDataService.PathExists(path))
+                {
+                    if (fileDataService.IsPathFile(path))
+                    {
+                        ViewData["ObjectType"] = "Document";
+                    }
+                    else if (fileDataService.IsPathFolder(path))
+                    {
+                        ViewData["ObjectType"] = "Folder";
+                    }
+                    ViewData["CurrentPath"] = path;
+                    return View();
+                } else
+                {
+                    return NotFound();
+                }
+            }
+
+            return Unauthorized();
+        }
+
+        public IActionResult ConfirmDelete(string path)
+        {
+
+            UserModel user = userService.GetUserModel(HttpContext.Session.GetString("Username"));
+
+            if (user.HasRole(UserRole.DataManager))
+            {
+                if (fileDataService.PathExists(path))
+                {
+                    string retUrl = fileDataService.GetRelativeSubjectPath(fileDataService.GetParentPathForFileOrFolder(path));
+                    fileDataService.DeleteFileOrFolderForPath(path);
+                    return RedirectToAction("Index", "Home", new { itemPath = retUrl });
+                }
+                else
+                {
+                    return NotFound();
+                }
             }
 
             return Unauthorized();
@@ -31,7 +117,7 @@ namespace DataRoom.Controllers
 
         public IActionResult Post(string path)
         {
-            string newPath = fileDataService.CreateNewSubjectFolder(path, Request.Form["FolderName"]);
+            string newPath = fileDataService.CreateNewFolder(path, Request.Form["FolderName"]);
             return RedirectToAction("Index", "Home", new { itemPath = newPath });
         }
     }

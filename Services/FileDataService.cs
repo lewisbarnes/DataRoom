@@ -47,7 +47,7 @@ namespace DataRoom.Services
             return ret;
         }
 
-        public string CreateNewSubjectFolder(string path, string folderName)
+        public string CreateNewFolder(string path, string folderName)
         {
             string newPath = Path.Combine(GetFullPath(path), folderName);
             if (!Directory.Exists(newPath))
@@ -55,6 +55,20 @@ namespace DataRoom.Services
                 Directory.CreateDirectory(newPath);
             }
             return Path.Combine(path,folderName);
+        }
+
+        public bool DeleteFileOrFolderForPath(string path)
+        {
+            if(IsPathFile(path))
+            {
+                File.Delete(GetFullPath(path));
+                return true;
+            } else if(IsPathFolder(path))
+            {
+                Directory.Delete(GetFullPath(path));
+                return true;
+            }
+            return false;
         }
 
         public byte[] GetDataForFile(string filePath)
@@ -103,6 +117,26 @@ namespace DataRoom.Services
         public string GetSubjectFolderName(string path)
         {
             return path.Replace($"{TopLevelDataFolder}\\", "").Split('\\')[0];
+        }
+
+        public string GetParentPathForFileOrFolder(string path)
+        {
+            string ret = string.Empty;
+            if(IsPathFolder(path))
+            {
+                ret = Directory.GetParent(path).FullName;
+            } else if(IsPathFile(path))
+            {
+                FileInfo fi = new FileInfo(path);
+                ret = fi.Directory.Name;
+            }
+
+            return ret;
+        }
+
+        public string GetRelativeSubjectPath(string path)
+        {
+            return path.Replace(TopLevelDataFolder, "").Replace(internalDataPath,"");
         }
     }
 }

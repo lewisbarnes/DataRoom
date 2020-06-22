@@ -1,4 +1,7 @@
 ﻿@model FileFolderModel
+@using Microsoft.AspNetCore.Http
+@using DataRoom.Helpers
+@inject DataRoom.Services.UserService userService
 @{
     ViewData["Title"] = Model.FolderPath;
 }
@@ -15,11 +18,16 @@
     <div class="col-md-8 text-center">
         @if (Model.FileObjects.Any())
         {
+            var user = userService.GetUserModel(Context.Session.GetString("Username"));
             <table class="table table-sm">
                 <thead>
                     <tr>
-                        <th scope="col" style="width: 50%"><b>Name</b></th>
-                        <th scope="col" style="width: 50%"><b>Type</b></th>
+                        <th scope="col" style="width: @(user.HasRole(UserRole.DataManager) ? "33%" : "50%")"><b>Name</b></th>
+                        <th scope="col" style="width: @(user.HasRole(UserRole.DataManager) ? "33%" : "50%")"><b>Type</b></th>
+                        @if (user.HasRole(UserRole.DataManager))
+                        {
+                            <th scope="col" style="width: 33%"><b>Actions</b></th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
@@ -27,11 +35,19 @@
                     {
                         <tr>
                             <td>
+
                                 @Html.ActionLink(f.DisplayName, "Index", "Home", new { itemPath = f.ItemPath })
                             </td>
                             <td>
                                 @f.Type
                             </td>
+                            @if (user.HasRole(UserRole.DataManager))
+                            {
+                                <td>
+                                    <a class="px-1" href=@Url.Action("Delete","Data", new { path = f.ItemPath })><span class="fas fa-trash", title="Delete"></span></a>
+                                    <a class="px-1" href="@Url.Action("Rename","Data", new { path = f.ItemPath })"><span class="fas fa-pen-square" title="Rename"></span></a>
+                                </td>
+                            }
                         </tr>
                     }
                 </tbody>

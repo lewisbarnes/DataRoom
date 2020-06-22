@@ -1,0 +1,19 @@
+﻿@{
+    ViewData["Title"] = "New Folder";
+}
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8 d-flex justify-content-center">
+            <h3>Delete @ViewData["ObjectType"] (@ViewData["CurrentPath"])</h3>
+        </div>
+        <div class="col-md-2"></div>
+    </div>
+<div class="row">
+    <div class="col-md-4"></div>
+    <div class="col-md-4 d-flex justify-content-center text-center">
+        @Html.ActionLink("Confirm", "ConfirmDelete", "Data", new { path = ViewData["CurrentPath"] })
+    </div>
+    <div class="col-md-4"></div>
+</div>
+
+
